@@ -1,5 +1,14 @@
 // main.js
 
+function isEmpty(obj) {
+  for(var prop in obj) {
+      if(obj.hasOwnProperty(prop))
+          return false;
+  }
+
+  return true;
+}
+
 // CONSTANTS
 const RECIPE_URLS = [
   'https://introweb.tech/assets/json/1_50-thanksgiving-side-dishes.json',
@@ -45,6 +54,19 @@ function initializeServiceWorker() {
   // We first must register our ServiceWorker here before any of the code in
   // sw.js is executed.
   // B1. TODO - Check if 'serviceWorker' is supported in the current browser
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', (event) => {
+      try {
+        const registration = navigator.serviceWorker.register("./sw.js");
+        if (registration.active) {
+          console.log("Service worker success");
+        }
+      } catch (error) {
+        console.error(`Registration failed with ${error}`);
+      }
+    })
+  }
+
   // B2. TODO - Listen for the 'load' event on the window object.
   // Steps B3-B6 will be *inside* the event listener's function created in B2
   // B3. TODO - Register './sw.js' as a service worker (The MDN article
@@ -68,15 +90,49 @@ async function getRecipes() {
   // EXPOSE - START (All expose numbers start with A)
   // A1. TODO - Check local storage to see if there are any recipes.
   //            If there are recipes, return them.
+  let recipes = JSON.parse(localStorage.getItem('recipes'));
+
+  if (!(isEmpty(recipes))) {
+      return recipes;
+  }
+
   /**************************/
   // The rest of this method will be concerned with requesting the recipes
   // from the network
   // A2. TODO - Create an empty array to hold the recipes that you will fetch
+  var fetchRecipes = [];
+
   // A3. TODO - Return a new Promise. If you are unfamiliar with promises, MDN
   //            has a great article on them. A promise takes one parameter - A
   //            function (we call these callback functions). That function will
   //            take two parameters - resolve, and reject. These are functions
   //            you can call to either resolve the Promise or Reject it.
+  let newPromise = new Promise(async function(myResolve, myReject) {
+
+    for (var i=0; i < RECIPE_URLS.length; i++) {
+
+      try {
+
+        let response = await fetch(RECIPE_URLS[i]);
+        let fetchResponse = await response.json();
+        fetchRecipes.push(fetchResponse);
+        if (i == RECIPE_URLS.length-1) {   
+          myResolve(fetchRecipes);
+        }
+
+      } catch(error) {
+
+        console.error(error);
+        myReject(error);
+
+      }
+
+    }
+
+    });
+
+  return newPromise;
+
   /**************************/
   // A4-A11 will all be *inside* the callback function we passed to the Promise
   // we're returning

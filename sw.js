@@ -9,7 +9,7 @@ self.addEventListener('install', function (event) {
     caches.open(CACHE_NAME).then(function (cache) {
       // B6. TODO - Add all of the URLs from RECIPE_URLs here so that they are
       //            added to the cache when the ServiceWorker is installed
-      return cache.addAll([]);
+      return cache.addAll([RECIPE_URLS]);
     })
   );
 });
@@ -34,7 +34,39 @@ self.addEventListener('fetch', function (event) {
   /*******************************/
   // B7. TODO - Respond to the event by opening the cache using the name we gave
   //            above (CACHE_NAME)
+  caches.open(CACHE_NAME).then(async function(response) {
+
+
+   cache.match(event.request).then(async (response) => {
+
+      if (response !== undefined) {
+        return response;
+      } else {
+        let fetchResource = await fetch(event.request);
+        cache.add(fetchResource);
+        return fetch(event.request)
+        .then((response) => {
+          // response may be used only once
+          // we need to save clone to put one copy in cache
+          // and serve second one
+          let responseClone = response.clone();
+
+          caches.open("v1").then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        
+        
+        // cache.match(event.request);
+      }
+
+    })
+
+
+  })
   // B8. TODO - If the request is in the cache, return with the cached version.
   //            Otherwise fetch the resource, add it to the cache, and return
   //            network response.
+
 });
